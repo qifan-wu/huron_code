@@ -1,0 +1,131 @@
+---
+title: "K-Means Clustering"
+output: html_notebook
+---
+```{r}
+library(tidyverse)
+library(dplyr)  # data manipulation
+library(cluster)    # clustering algorithms
+library(factoextra) # clustering visualization
+library(dendextend) # for comparing two dendrograms
+```
+Clean and scale data
+```{r}
+df_org <- read.csv('../data/processed/intermediate/built_env.csv')
+```
+```{r}
+scale_table <- function(df_org, row_name_column) {
+  df1 <- df_org %>%
+    
+    remove_rownames() %>%
+    column_to_rownames(var = row_name_column)
+  
+  df <- scale(df1)
+  df <- subset(df, select = -X) #remove X column
+  return(df)
+}
+
+df <- scale_table(df_org, 'Site_ID')
+```
+
+```{r}
+library(ggsignif)
+library(factoextra)
+library(gridExtra)
+```
+```{r}
+fviz_nbclust(df, kmeans, method = "wss")
+fviz_nbclust(df, kmeans, method = "silhouette")
+```
+
+```{r}
+vis_gen_clusters <- function(df) {
+  k2 <- kmeans(df, centers = 2, nstart = 25)
+  k3 <- kmeans(df, centers = 3, nstart = 25)
+  k4 <- kmeans(df, centers = 4, nstart = 25)
+  k5 <- kmeans(df, centers = 5, nstart = 25)
+  
+  # plots to compare
+  p1 <- fviz_cluster(k2, geom = "point", data = df) + ggtitle("k = 2")
+  p2 <- fviz_cluster(k3, geom = "point",  data = df) + ggtitle("k = 3")
+  p3 <- fviz_cluster(k4, geom = "point",  data = df) + ggtitle("k = 4")
+  p4 <- fviz_cluster(k5, geom = "point",  data = df) + ggtitle("k = 5")
+  
+  grid.arrange(p1, p2, p3, p4, nrow = 2)
+}
+
+vis_gen_clusters(df)
+```
+```{r}
+cluster_num = 4
+
+vis_clusters <- function(df, cluster_num) {
+  set.seed(31)
+
+  k <- kmeans(df, centers = cluster_num, nstart = 25)
+  mycluster <- fviz_cluster(k, data = df)
+  mycluster + theme(axis.line = element_line(colour="gray"),
+                    panel.grid.major=element_line(colour="gray"),
+                    panel.grid.minor=element_line(colour="gray"),
+                    panel.background = element_blank())
+}
+vis_clusters(df, 4)
+```
+```{r}
+write_clusters <- function(df, cluster_num) {
+  set.seed(31)
+  km_res <- kmeans(df, cluster_num, nstart = 25)
+  return(km_res$cluster)
+}
+
+df_cluster <- df_org
+df_cluster$cluster <- write_clusters(df, cluster_num)
+df_cluster <- df_cluster[, c("Site_ID", "cluster")]
+```
+
+```{r}
+write.csv(df_cluster, "../data/processed/intermediate/clusters.csv")
+```
+
+```{r}
+df_all <- read_csv("../data/processed/intermediate/all_params.csv")
+total <- merge(df_all, df_cluster, by=c("Site_ID"))
+```
+
+```{r}
+library(ggplot2)
+library(gridExtra)
+
+create_boxplots <- function(df, variables, nrow) {
+  plots <- list()
+  for (var in variables) {
+    p <- ggplot(df, aes_string(x = "as.factor(cluster)", y = var)) + 
+      geom_boxplot() + theme_bw() +
+      labs(x = "cluster", y = var, title = paste(var, "by Cluster"))
+    plots[[var]] <- p
+  }
+  do.call(grid.arrange, c(plots, nrow = nrow))
+}
+
+variables <- c("TP", "TSS", "eCol")
+create_boxplots(total, variables, 1)
+```
+```{r}
+create_boxplots(total, c('RoadDensity',
+   'LaneDensity', 'GravelDensity', 'AsphaltDensity', 'ConcreteDensity',
+   'StateRdDensity', 'CountyRdDensity', 'CityRdDensity', 'ParcelCtDensity'), 3)
+```
+```{r}
+create_boxplots(total, c('ParcelAvgArea', 'AgPercent', 'CommercialPercent', 'GreenPercent',
+   'IndustryPercent', 'ServicePercent', 'ResidentialPercent',
+   'VaccantPercent', 'OpenDevPercent', 'LowDevPercent', 'MedDevPercent',
+   'HighDevPercent', 'MedianFloors', 'MedianBuiltYr', 'RangeBuiltYr',
+   'FootprintDensity', 'UnitDensity'), 3)
+```
+```{r}
+create_boxplots(total, c('tmean', 'ppt', 'ppt_rx1'), 1)
+```
+```{r}
+create_boxplots(total, c('SoilBPercent', 'SoilCPercent', 'SoilDPercent', 'SoilDepth', 'Slope'), 2)
+```
+

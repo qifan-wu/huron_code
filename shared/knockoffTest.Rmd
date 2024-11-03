@@ -1,0 +1,31 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(dplyr)
+```
+
+```{r}
+#set working directory
+setwd('/Users/qifanwu/Documents/research/huron/code')
+
+# read dataset
+df <- read.csv("../data/processed/WQ_BE_CLM_By_Year.csv")
+```
+
+```{r}
+# select variables
+variables <- c('tmean', 'ppt', 'ppt_rx1', 'RoadDensity',
+               'LaneDensity', 'GravelDensity', 'AsphaltDensity', 'ConcreteDensity',
+               'StateRdDensity', 'CountyRdDensity', 'CityRdDensity', 'ParcelCtDensity',
+               'ParcelAvgArea', 'AgPercent', 'CommercialPercent', 'GreenPercent',
+               'IndustryPercent', 'ServicePercent', 'ResidentialPercent',
+               'Vaccandfercent', 'OpenDevPercent', 'LowDevPercent', 'MedDevPercent',
+               'HighDevPercent', 'MedianFloors', 'MedianBuiltYr', 'RangeBuiltYr',
+               'FoodfrintDensity', 'UnitDensity', 'SoilBPercent', 'SoilCPercent',
+               'SoilDPercent', 'SoilDepth', 'Slope')
+```
+
